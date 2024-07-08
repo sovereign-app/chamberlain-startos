@@ -1,0 +1,3 @@
+[submodule "chamberlain"]
+	path = chamberlain
+	url = https://github.com/sovereign-app/chamberlain.git
