@@ -1,4 +1,4 @@
-FROM rust:1.78-slim-bookworm AS builder
+FROM rust:1.79-slim-bookworm AS builder
 
 RUN apt-get update -qqy && \
     apt-get upgrade -qqy && \
@@ -28,6 +28,7 @@ ARG PLATFORM
 RUN curl -sLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${PLATFORM} && chmod +x /usr/local/bin/yq
 
 COPY --from=builder /usr/local/cargo/bin/chamberlain /bin/chamberlain
+COPY --from=builder /usr/local/cargo/bin/chamberlaind /bin/chamberlaind
 
 ADD ./docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
 RUN chmod a+x /usr/local/bin/docker_entrypoint.sh

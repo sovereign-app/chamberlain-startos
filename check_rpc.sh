@@ -1,3 +1,3 @@
-#!/bin/bash
+#!/bin/sh
 
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3338
+nc -z localhost 3339

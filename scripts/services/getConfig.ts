@@ -1,7 +1,7 @@
 import { types as T, compat } from "../deps.ts";
 
 export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
-  user: {
+  "bitcoind-rpc-user": {
     type: "pointer",
     name: "RPC Username",
     description: "The username for Bitcoin Core's RPC interface",
@@ -11,7 +11,7 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
     multi: false,
     selector: "$.rpc.username",
   },
-  password: {
+  "bitcoind-rpc-password": {
     type: "pointer",
     name: "RPC Password",
     description: "The password for Bitcoin Core's RPC interface",
@@ -20,5 +20,11 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
     target: "config",
     multi: false,
     selector: "$.rpc.password",
+  },
+  "mint-url": {
+    type: "string",
+    name: "Mint URL",
+    description: "The public URL of the mint",
+    nullable: false,
   },
 });

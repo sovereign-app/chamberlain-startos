@@ -64,7 +64,7 @@ main:
   # Specifies where to mount the data volume(s), if there are any. Mounts for pointer dependency volumes are also denoted here. These are necessary if data needs to be read from / written to these volumes. 
   mounts:
     # Specifies where on the service's file system its persistence directory should be mounted prior to service startup
-    main: /root
+    main: /root/data
 # Specifies whether GPU acceleration is enabled or not. False by default.
   gpu-acceleration: false
 # Defines what architectures will be supported by the service. This service supports x86_64 and aarch64 architectures.
@@ -79,7 +79,7 @@ health-checks:
     success-message: The Cashu HTTP interface is operational.
     type: docker
     image: main
-    entrypoint: "check-http.sh"
+    entrypoint: "check_http.sh"
     args: []
     inject: true
     system: false
@@ -89,13 +89,18 @@ health-checks:
     success-message: The Management RPC interface is operational.
     type: docker
     image: main
-    entrypoint: "check-rpc.sh"
+    entrypoint: "check_rpc.sh"
     args: []
     inject: true
     system: false
     io-format: json
-config: ~
-properties: ~
+config:
+  get:
+    type: script
+  set:
+    type: script
+properties:
+  type: script
 #  type: script
 # This denotes any data, asset, or pointer volumes that should be connected when the "docker run" command is invoked
 volumes:
@@ -107,9 +112,9 @@ interfaces:
   # This key is the internal name that the OS will use to configure the interface
   main:
     # A human readable name for display in the UI
-    name: User Interface
+    name: Main Interface
     # A descriptive description of what the interface does
-    description: A simple user interface that is expected to display the text "Hello Word"
+    description: The main interface for the Chamberlain service.
     # Port mappings are from the external port to the internal container port
     lan-config:
       3338:
@@ -123,6 +128,8 @@ interfaces:
     # Denotes the protocol specifications used by this interface
     protocols:
       - http
+      - https
+      - grpc
 dependencies:
   bitcoind:
     version: ">=0.21.1.2 <29.0.0"
