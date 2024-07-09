@@ -10,7 +10,7 @@ version: 0.0.1
 release-notes: |
   Revamped for StartOS 0.3.5.x
 # The type of license for the project. Include the LICENSE in the root of the project directory. A license is required for a Start9 package.
-license: MIT
+license: MIT+CC
 # The repository URL for the package. This repo contains the manifest file (this), any scripts necessary for configuration, backups, actions, or health checks (more below). This key must exist. But could be embedded into the source repository. 
 wrapper-repo: "https://github.com/sovereign-app/chamberlain-startos"
 # The original project repository URL. There is no upstream repo in this example
