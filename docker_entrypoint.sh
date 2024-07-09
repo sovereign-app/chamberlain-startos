@@ -23,6 +23,7 @@ data:
 EOF
 
 exec tini -p SIGTERM chamberlaind -- \
+    --data-dir /root/data \
     --mint-url $MINT_URL \
     --password $PASSWORD \
     --bitcoind-rpc-url http://bitcoind.embassy:8332 \

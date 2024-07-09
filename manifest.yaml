@@ -110,25 +110,33 @@ volumes:
 # This specifies how to configure the port mapping for exposing the service over TOR and LAN (if applicable). Many interfaces can be specified depending on the needs of the service. If it can be launched over a Local Area Network connection, specify a `lan-config`. Otherwise, at minimum, a `tor-config` must be specified.
 interfaces:
   # This key is the internal name that the OS will use to configure the interface
-  main:
+  mint:
     # A human readable name for display in the UI
-    name: Main Interface
+    name: Cashu HTTP Interface
     # A descriptive description of what the interface does
-    description: The main interface for the Chamberlain service.
+    description: The interface for the Cashu HTTP server.
     # Port mappings are from the external port to the internal container port
     lan-config:
-      3338:
+      443:
         ssl: true
         internal: 3338
-      3339:
-        ssl: true
-        internal: 3339
     # Denotes if the service has a user interface to display
     ui: false
     # Denotes the protocol specifications used by this interface
     protocols:
+      - tcp
       - http
-      - https
+  rpc:
+    name: Management RPC Interface
+    description: The interface for the Chamberlain gRPC server.
+    lan-config:
+      443:
+        ssl: true
+        internal: 3339
+    ui: false
+    protocols:
+      - tcp
+      - http
       - grpc
 dependencies:
   bitcoind:
