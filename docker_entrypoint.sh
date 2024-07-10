@@ -31,4 +31,5 @@ exec tini -p SIGTERM chamberlaind -- \
     --bitcoind-rpc-password $BITCOIND_RPC_PASSWORD \
     --http-host 0.0.0.0 \
     --rpc-host 0.0.0.0 \
+    --lightning-auto-announce=false \
     --log-level debug

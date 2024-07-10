@@ -117,25 +117,23 @@ interfaces:
     description: The interface for the Cashu HTTP server.
     # Port mappings are from the external port to the internal container port
     lan-config:
-      443:
+      3338:
         ssl: true
         internal: 3338
     # Denotes if the service has a user interface to display
     ui: false
     # Denotes the protocol specifications used by this interface
     protocols:
-      - tcp
       - http
   rpc:
     name: Management RPC Interface
     description: The interface for the Chamberlain gRPC server.
     lan-config:
-      443:
+      3339:
         ssl: true
         internal: 3339
     ui: false
     protocols:
-      - tcp
       - http
       - grpc
 dependencies:

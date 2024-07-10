@@ -37,7 +37,7 @@ RUN chmod a+x /usr/local/bin/check_http.sh
 ADD ./check_rpc.sh /usr/local/bin/check_rpc.sh
 RUN chmod a+x /usr/local/bin/check_rpc.sh
 
-WORKDIR /data
+WORKDIR /root/data
 
 EXPOSE 3338
 EXPOSE 3339
