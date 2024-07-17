@@ -25,7 +25,7 @@ RUN apt-get update -qqy && \
     netcat-openbsd \
     nginx \
     tini \
-    wireguard-tools \ && \
+    wireguard-tools && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
 
 ARG ARCH
