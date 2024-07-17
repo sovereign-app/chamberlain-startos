@@ -9,9 +9,10 @@ BITCOIND_RPC_USER=$(yq '.bitcoind-rpc-user' "$CONFIG_FILE")
 BITCOIND_RPC_PASSWORD=$(yq '.bitcoind-rpc-password' "$CONFIG_FILE")
 MANAGEMENT_ENABLED=$(yq '.sovereign-app.enabled' "$CONFIG_FILE")
 
+echo "Management enabled: $MANAGEMENT_ENABLED"
 if [ "$MANAGEMENT_ENABLED" = "true" ]; then
     echo "Management enabled"
-    MANAGEMENT_CONFIG=$(yq '.management-key' "$CONFIG_FILE" | base64 -d)
+    MANAGEMENT_CONFIG=$(yq '.sovereign-app.management-key' "$CONFIG_FILE" | base64 -d)
 else
     echo "Management disabled"
 fi
@@ -55,22 +56,29 @@ EOF
 
 _term() { 
   echo "Caught SIGTERM signal!"
-  kill -TERM "$boringtun_process" 2>/dev/null
   kill -TERM "$chamberlain_process" 2>/dev/null
-  kill -TERM "$nginx_process" 2>/dev/null
+  if [ -z "$nginx_process" ]; then
+    kill -TERM "$nginx_process" 2>/dev/null
+  fi
 }
 
-echo "Writing auth token to /root/data/auth_token"
-echo "$MANAGEMENT_CONFIG" | jq -r '.k' | base64 -d > /root/data/auth_token
+if [ "$MANAGEMENT_ENABLED" = "true" ]; then
+    echo "Writing private key auth token to /root/data/auth_token"
+    echo "$MANAGEMENT_CONFIG" | jq -r '.k' | base64 -d > /root/data/auth_token
 
-echo "Writing nginx config to /etc/nginx/nginx.conf"
-DOMAIN_NAME=$(echo "$MINT_URL" | sed -e 's/https:\/\///' -e 's/http:\/\///' -e 's/\/.*//')
-export DOMAIN_NAME
-echo "Domain: $DOMAIN_NAME"
-envsubst '${DOMAIN_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
-echo "Starting nginx"
-nginx -g "daemon off;" &
-nginx_process=$!
+    echo "Writing nginx config to /etc/nginx/nginx.conf"
+    DOMAIN_NAME=$(echo "$MINT_URL" | sed -e 's/https:\/\///' -e 's/http:\/\///' -e 's/\/.*//')
+    export DOMAIN_NAME
+    echo "Domain: $DOMAIN_NAME"
+    envsubst '${DOMAIN_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+    echo "Starting nginx"
+    nginx -g "daemon off;" &
+    nginx_process=$!
+fi
+if [ ! -f "/root/data/auth_token" ]; then
+    echo "Writing default auth token to /root/data/auth_token"
+    dd if=/dev/zero of=/root/data/auth_token bs=32 count=1
+fi
 
 echo "Starting chamberlaind"
 chamberlaind \
@@ -89,8 +97,22 @@ chamberlaind \
     --log-level debug &
 chamberlain_process=$!
 
-echo "Starting WireGuard"
-wg-quick up /etc/wireguard/wg0.conf
-trap _term TERM
-wait $chamberlain_process $nginx_process
-wg-quick down /etc/wireguard/wg0.conf
+if [ "$MANAGEMENT_ENABLED" = "true" ]; then
+    WG_ADDRESS=$(echo "$MANAGEMENT_CONFIG" | jq -r '.a')
+    export WG_ADDRESS
+    WG_PRIVATE_KEY=$(echo "$MANAGEMENT_CONFIG" | jq -r '.k')
+    export WG_PRIVATE_KEY
+    WG_PEER_PUBLIC_KEY=$(echo "$MANAGEMENT_CONFIG" | jq -r '.p')
+    export WG_PEER_PUBLIC_KEY
+    WG_ENDPOINT=$(echo "$MANAGEMENT_CONFIG" | jq -r '.e')
+    export WG_ENDPOINT
+    envsubst '${WG_ADDRESS} ${WG_PRIVATE_KEY} ${WG_PEER_PUBLIC_KEY} ${WG_ENDPOINT}' < /etc/wireguard/wg0.conf.template > /etc/wireguard/wg0.conf
+    echo "Starting WireGuard"
+    wg-quick up /etc/wireguard/wg0.conf
+    trap _term TERM
+    wait $chamberlain_process $nginx_process
+    wg-quick down /etc/wireguard/wg0.conf
+else
+    trap _term TERM
+    wait $chamberlain_process
+fi
