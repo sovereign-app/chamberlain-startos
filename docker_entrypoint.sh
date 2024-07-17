@@ -3,9 +3,19 @@
 set -e
 
 CONFIG_FILE="/root/data/start9/config.yaml"
+echo "Starting Chamberlain from config file: $CONFIG_FILE"
 
 BITCOIND_RPC_USER=$(yq '.bitcoind-rpc-user' "$CONFIG_FILE")
 BITCOIND_RPC_PASSWORD=$(yq '.bitcoind-rpc-password' "$CONFIG_FILE")
+MANAGEMENT_ENABLED=$(yq '.sovereign-app.enabled' "$CONFIG_FILE")
+
+if [ "$MANAGEMENT_ENABLED" = "true" ]; then
+    echo "Management enabled"
+    MANAGEMENT_CONFIG=$(yq '.management-key' "$CONFIG_FILE" | base64 -d)
+else
+    echo "Management disabled"
+fi
+
 MINT_URL=$(yq '.mint-url' "$CONFIG_FILE")
 MINT_NAME=$(yq '.mint-name' "$CONFIG_FILE")
 if [ -z "$MINT_NAME" ] || [ "$MINT_NAME" = "null" ]; then
@@ -29,6 +39,7 @@ if [ -z "$MINT_CONTACT_NPUB" ] || [ "$MINT_CONTACT_NUB" = "null" ]; then
 fi
 PASSWORD=$(tr -dc a-km-zA-HJ-NP-Z2-9 </dev/urandom | head -c 8)
 
+echo "Writing password to /root/data/start9/stats.yaml"
 cat << EOF > /root/data/start9/stats.yaml
 ---
 version: 2
@@ -42,7 +53,27 @@ data:
     masked: true
 EOF
 
-exec tini -p SIGTERM chamberlaind -- \
+_term() { 
+  echo "Caught SIGTERM signal!"
+  kill -TERM "$boringtun_process" 2>/dev/null
+  kill -TERM "$chamberlain_process" 2>/dev/null
+  kill -TERM "$nginx_process" 2>/dev/null
+}
+
+echo "Writing auth token to /root/data/auth_token"
+echo "$MANAGEMENT_CONFIG" | jq -r '.k' | base64 -d > /root/data/auth_token
+
+echo "Writing nginx config to /etc/nginx/nginx.conf"
+DOMAIN_NAME=$(echo "$MINT_URL" | sed -e 's/https:\/\///' -e 's/http:\/\///' -e 's/\/.*//')
+export DOMAIN_NAME
+echo "Domain: $DOMAIN_NAME"
+envsubst '${DOMAIN_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+echo "Starting nginx"
+nginx -g "daemon off;" &
+nginx_process=$!
+
+echo "Starting chamberlaind"
+chamberlaind \
     --data-dir /root/data \
     --mint-url "$MINT_URL" \
     --mint-name "$MINT_NAME" \
@@ -54,7 +85,12 @@ exec tini -p SIGTERM chamberlaind -- \
     --bitcoind-rpc-url "http://bitcoind.embassy:8332" \
     --bitcoind-rpc-user "$BITCOIND_RPC_USER" \
     --bitcoind-rpc-password "$BITCOIND_RPC_PASSWORD" \
-    --http-host 0.0.0.0 \
-    --rpc-host 0.0.0.0 \
     --lightning-auto-announce=false \
-    --log-level debug
+    --log-level debug &
+chamberlain_process=$!
+
+echo "Starting WireGuard"
+wg-quick up /etc/wireguard/wg0.conf
+trap _term TERM
+wait $chamberlain_process $nginx_process
+wg-quick down /etc/wireguard/wg0.conf

@@ -1,0 +1,8 @@
+[Interface]
+Address = ${WG_ADDRESS}
+PrivateKey = ${WG_PRIVATE_KEY}
+
+[Peer]
+PublicKey = ${WP_PEER_PUBLIC_KEY}
+AllowedIPs = 10.0.0.0/8
+Endpoint = ${WG_PEER_ENDPOINT}

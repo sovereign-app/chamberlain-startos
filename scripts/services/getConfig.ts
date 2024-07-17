@@ -27,6 +27,26 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
     description: "The public URL of the mint",
     nullable: false,
   },
+  "sovereign-app": {
+    "type": "object",
+    "name": "sovereign.app Integration",
+    "description": "Configuration for sovereign.app integration",
+    "spec": {
+      "enabled": {
+        "type": "boolean",
+        "name": "Enabled",
+        "description": "Whether sovereign.app integration is enabled",
+        "nullable": false,
+        "default": true,
+      },
+      "management-key": {
+        "type": "string",
+        "name": "Management Key",
+        "description": "The sovereign.app management key",
+        "nullable": true,
+      }
+    }
+  },
   "mint-name": {
     type: "string",
     name: "Mint Name",
