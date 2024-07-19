@@ -71,6 +71,7 @@ if [ "$MANAGEMENT_ENABLED" = "true" ]; then
     export DOMAIN_NAME
     echo "Domain: $DOMAIN_NAME"
     envsubst '${DOMAIN_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+    certbot --nginx --non-interactive --agree-tos --email "$MINT_CONTACT_EMAIL" -d "$DOMAIN_NAME"
     echo "Starting nginx"
     nginx -g "daemon off;" &
     nginx_process=$!
