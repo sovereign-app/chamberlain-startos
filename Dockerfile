@@ -24,6 +24,7 @@ RUN apt-get update -qqy && \
     jq \
     netcat-openbsd \
     nginx \
+    python-certbot-nginx \
     tini \
     wireguard-tools && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*

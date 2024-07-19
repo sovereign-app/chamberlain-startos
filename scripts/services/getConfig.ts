@@ -74,7 +74,7 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
         type: "string",
         name: "Email",
         description: "Email address for the mint",
-        nullable: true,
+        nullable: false,
       },
       "twitter": {
         type: "string",
