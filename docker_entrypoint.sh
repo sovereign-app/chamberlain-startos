@@ -11,10 +11,7 @@ MANAGEMENT_ENABLED=$(yq '.sovereign-app.enabled' "$CONFIG_FILE")
 
 echo "Management enabled: $MANAGEMENT_ENABLED"
 if [ "$MANAGEMENT_ENABLED" = "true" ]; then
-    echo "Management enabled"
     MANAGEMENT_CONFIG=$(yq '.sovereign-app.management-key' "$CONFIG_FILE" | base64 -d)
-else
-    echo "Management disabled"
 fi
 
 MINT_URL=$(yq '.mint-url' "$CONFIG_FILE")
@@ -65,13 +62,39 @@ _term() {
 if [ "$MANAGEMENT_ENABLED" = "true" ]; then
     echo "Writing private key auth token to /root/data/auth_token"
     echo "$MANAGEMENT_CONFIG" | jq -r '.k' | base64 -d > /root/data/auth_token
+    
+    WG_ADDRESS=$(echo "$MANAGEMENT_CONFIG" | jq -r '.a')
+    export WG_ADDRESS
+    WG_PRIVATE_KEY=$(echo "$MANAGEMENT_CONFIG" | jq -r '.k')
+    export WG_PRIVATE_KEY
+    WG_PEER_PUBLIC_KEY=$(echo "$MANAGEMENT_CONFIG" | jq -r '.p')
+    export WG_PEER_PUBLIC_KEY
+    WG_ENDPOINT="$DOMAIN_NAME:51820"
+    export WG_ENDPOINT
+    envsubst '${WG_ADDRESS} ${WG_PRIVATE_KEY} ${WG_PEER_PUBLIC_KEY} ${WG_ENDPOINT}' < /etc/wireguard/wg0.conf.template > /etc/wireguard/wg0.conf
+    echo "Starting WireGuard"
+    wg-quick up /etc/wireguard/wg0.conf
 
     echo "Writing nginx config to /etc/nginx/nginx.conf"
     DOMAIN_NAME=$(echo "$MINT_URL" | sed -e 's/https:\/\///' -e 's/http:\/\///' -e 's/\/.*//')
     export DOMAIN_NAME
     echo "Domain: $DOMAIN_NAME"
-    envsubst '${DOMAIN_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
-    certbot --nginx --non-interactive --agree-tos --email "$MINT_CONTACT_EMAIL" -d "$DOMAIN_NAME"
+    if [ ! -d "/etc/letsencrypt/live/$DOMAIN_NAME" ]; then
+        echo "Generating Let's Encrypt certificate for $DOMAIN_NAME"
+        envsubst '${DOMAIN_NAME}' < /etc/nginx/certbot_nginx.conf.template > /etc/nginx/nginx.conf
+        certbot certonly --nginx --non-interactive --agree-tos --email "$MINT_CONTACT_EMAIL" -d "$DOMAIN_NAME"
+        nginx -g "daemon off;" &
+        nginx_process=$!
+        while [ ! -d "/etc/letsencrypt/live/$DOMAIN_NAME" ]; do
+            echo "Waiting for certificate directory /etc/letsencrypt/live/$DOMAIN_NAME to be created..."
+            sleep 1
+        done
+        kill -TERM "$nginx_process" 2>/dev/null
+    else
+        echo "Renewing Let's Encrypt certificate for $DOMAIN_NAME (if necessary)"
+        envsubst '${DOMAIN_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+        certbot renew
+    fi
     echo "Starting nginx"
     nginx -g "daemon off;" &
     nginx_process=$!
@@ -99,17 +122,6 @@ chamberlaind \
 chamberlain_process=$!
 
 if [ "$MANAGEMENT_ENABLED" = "true" ]; then
-    WG_ADDRESS=$(echo "$MANAGEMENT_CONFIG" | jq -r '.a')
-    export WG_ADDRESS
-    WG_PRIVATE_KEY=$(echo "$MANAGEMENT_CONFIG" | jq -r '.k')
-    export WG_PRIVATE_KEY
-    WG_PEER_PUBLIC_KEY=$(echo "$MANAGEMENT_CONFIG" | jq -r '.p')
-    export WG_PEER_PUBLIC_KEY
-    WG_ENDPOINT=$(echo "$MANAGEMENT_CONFIG" | jq -r '.e')
-    export WG_ENDPOINT
-    envsubst '${WG_ADDRESS} ${WG_PRIVATE_KEY} ${WG_PEER_PUBLIC_KEY} ${WG_ENDPOINT}' < /etc/wireguard/wg0.conf.template > /etc/wireguard/wg0.conf
-    echo "Starting WireGuard"
-    wg-quick up /etc/wireguard/wg0.conf
     trap _term TERM
     wait $chamberlain_process $nginx_process
     wg-quick down /etc/wireguard/wg0.conf

@@ -1,0 +1,19 @@
+worker_processes auto;
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    sendfile on;
+    keepalive_timeout 65;
+    server {
+        listen 80;
+        server_name ${DOMAIN_NAME};
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+    }
+}

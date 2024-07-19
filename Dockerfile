@@ -24,7 +24,7 @@ RUN apt-get update -qqy && \
     jq \
     netcat-openbsd \
     nginx \
-    python-certbot-nginx \
+    python3-certbot-nginx \
     tini \
     wireguard-tools && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
@@ -37,6 +37,7 @@ COPY --from=builder /usr/local/cargo/bin/chamberlain /bin/chamberlain
 COPY --from=builder /usr/local/cargo/bin/chamberlaind /bin/chamberlaind
 
 ADD conf/nginx.conf.template /etc/nginx/nginx.conf.template
+ADD conf/certbot_nginx.conf.template /etc/nginx/certbot_nginx.conf.template
 ADD conf/wg0.conf.template /etc/wireguard/wg0.conf.template
 
 ADD ./docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
