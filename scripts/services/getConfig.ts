@@ -39,17 +39,18 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
         nullable: false,
         default: true,
       },
-      "privkey": {
+      "private-key": {
         type: "string",
         name: "Nostr Secret Key (Hex)",
         description: "The Nostr secret key for the NWS service",
-        nullable: false,
+        nullable: true,
       },
       "relay": {
         type: "string",
         name: "Relay URL",
         description: "The URL of the NWS relay",
-        nullable: false,
+        default: "wss://relay.sovereign.app",
+        nullable: true,
       },
     }
   },

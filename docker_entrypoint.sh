@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -12,7 +12,13 @@ NWS_ENABLED=$(yq '.nws.enabled' "$CONFIG_FILE")
 echo "NWS enabled: $NWS_ENABLED"
 if [ "$NWS_ENABLED" = "true" ]; then
     export NOSTR_RELAYS="$(yq '.nws.relay' "$CONFIG_FILE")"
-    export NOSTR_PRIVATE_KEY="$(yq '.nws.private-key' "$CONFIG_FILE")"
+    NOSTR_PRIVATE_KEY="$(yq '.nws.private-key' "$CONFIG_FILE")"
+    if [ -z "$NOSTR_PRIVATE_KEY" ] || [ "$NOSTR_PRIVATE_KEY" = "null" ]; then
+        echo "Generating new NOSTR private key"
+        NOSTR_PRIVATE_KEY=$(openssl rand -hex 32)
+        yq -y ".nws.private-key = \"$NOSTR_PRIVATE_KEY\"" -i "$CONFIG_FILE"
+    fi
+    export NOSTR_PRIVATE_KEY
     export PUBLIC="false"
     export BACKEND_HOST="localhost:3338"
 fi
@@ -58,19 +64,8 @@ if [ ! -f "/root/data/auth_token" ]; then
     dd if=/dev/zero of=/root/data/auth_token bs=32 count=1
 fi
 
-_term() {
-  echo "Caught TERM signal!"
-  kill -INT "$nws_process" 2>/dev/null
-#   kill -INT "$nginx_process" 2>/dev/null
-  kill -INT "$chamberlain_process" 2>/dev/null
-}
-
-nws-entry &
-nws_process=$!
-
+nws-exit &
 # nginx -c /etc/nginx/nginx.conf &
-# nginx_process=$!
-
 chamberlaind \
     --data-dir /root/data \
     --mint-url "$MINT_URL" \
@@ -85,9 +80,6 @@ chamberlaind \
     --bitcoind-rpc-password "$BITCOIND_RPC_PASSWORD" \
     --lightning-auto-announce=false \
     --log-level debug &
-chamberlain_process=$!
 
-trap _term INT
-
-# wait $chamberlain_process $nginx_process $nws_process
-wait $chamberlain_process $nws_process
+wait -n
+exit $?

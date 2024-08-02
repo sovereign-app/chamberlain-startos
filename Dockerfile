@@ -14,7 +14,7 @@ RUN cargo +stable install --locked --path .
 FROM golang:1.21-bookworm AS go-builder
 WORKDIR /build
 COPY ./nws .
-RUN go build -o nws-entry cmd/entry/*.go
+RUN go build -o nws-exit cmd/exit/*.go
 
 FROM debian:bookworm-slim AS final
 
@@ -28,8 +28,7 @@ RUN apt-get update -qqy && \
     jq \
     netcat-openbsd \
     nginx \
-    tini && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/* /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
 
 ARG ARCH
 ARG PLATFORM
@@ -37,7 +36,7 @@ RUN curl -sLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/
 
 COPY --from=rust-builder /usr/local/cargo/bin/chamberlain /bin/chamberlain
 COPY --from=rust-builder /usr/local/cargo/bin/chamberlaind /bin/chamberlaind
-COPY --from=go-builder /build/nws-entry /bin/nws-entry
+COPY --from=go-builder /build/nws-exit /bin/nws-exit
 
 ADD ./docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
 RUN chmod a+x /usr/local/bin/docker_entrypoint.sh
