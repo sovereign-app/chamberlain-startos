@@ -67,11 +67,11 @@ interfaces:
       port-mapping:
         3338: "3338"
     lan-config:
-      80:
-        ssl: false
+      3338:
+        ssl: true
         internal: 3338
       3339:
-        ssl: false
+        ssl: true
         internal: 3339
     ui: false
     protocols:

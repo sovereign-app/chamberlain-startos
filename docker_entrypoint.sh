@@ -7,12 +7,15 @@ echo "Starting Chamberlain from config file: $CONFIG_FILE"
 
 BITCOIND_RPC_USER=$(yq '.bitcoind-rpc-user' "$CONFIG_FILE")
 BITCOIND_RPC_PASSWORD=$(yq '.bitcoind-rpc-password' "$CONFIG_FILE")
-# MANAGEMENT_ENABLED=$(yq '.sovereign-app.enabled' "$CONFIG_FILE")
+NWS_ENABLED=$(yq '.nws.enabled' "$CONFIG_FILE")
 
-# echo "Management enabled: $MANAGEMENT_ENABLED"
-# if [ "$MANAGEMENT_ENABLED" = "true" ]; then
-#     MANAGEMENT_CONFIG=$(yq '.sovereign-app.management-key' "$CONFIG_FILE" | base64 -d)
-# fi
+echo "NWS enabled: $NWS_ENABLED"
+if [ "$NWS_ENABLED" = "true" ]; then
+    export NOSTR_RELAYS="$(yq '.nws.relay' "$CONFIG_FILE")"
+    export NOSTR_PRIVATE_KEY="$(yq '.nws.private-key' "$CONFIG_FILE")"
+    export PUBLIC="false"
+    export BACKEND_HOST="localhost:3338"
+fi
 
 MINT_URL=$(yq '.mint-url' "$CONFIG_FILE")
 MINT_NAME=$(yq '.mint-name' "$CONFIG_FILE")
@@ -55,8 +58,20 @@ if [ ! -f "/root/data/auth_token" ]; then
     dd if=/dev/zero of=/root/data/auth_token bs=32 count=1
 fi
 
-echo "Starting chamberlaind"
-exec tini -p SIGTERM chamberlaind -- \
+_term() {
+  echo "Caught TERM signal!"
+  kill -INT "$nws_process" 2>/dev/null
+#   kill -INT "$nginx_process" 2>/dev/null
+  kill -INT "$chamberlain_process" 2>/dev/null
+}
+
+nws-entry &
+nws_process=$!
+
+# nginx -c /etc/nginx/nginx.conf &
+# nginx_process=$!
+
+chamberlaind \
     --data-dir /root/data \
     --mint-url "$MINT_URL" \
     --mint-name "$MINT_NAME" \
@@ -69,4 +84,10 @@ exec tini -p SIGTERM chamberlaind -- \
     --bitcoind-rpc-user "$BITCOIND_RPC_USER" \
     --bitcoind-rpc-password "$BITCOIND_RPC_PASSWORD" \
     --lightning-auto-announce=false \
-    --log-level debug
+    --log-level debug &
+chamberlain_process=$!
+
+trap _term INT
+
+# wait $chamberlain_process $nginx_process $nws_process
+wait $chamberlain_process $nws_process

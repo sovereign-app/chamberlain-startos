@@ -27,26 +27,32 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
     description: "The public URL of the mint",
     nullable: false,
   },
-  // "sovereign-app": {
-  //   "type": "object",
-  //   "name": "sovereign.app Integration",
-  //   "description": "Configuration for sovereign.app integration",
-  //   "spec": {
-  //     "enabled": {
-  //       "type": "boolean",
-  //       "name": "Enabled",
-  //       "description": "Whether sovereign.app integration is enabled",
-  //       "nullable": false,
-  //       "default": true,
-  //     },
-  //     "management-key": {
-  //       "type": "string",
-  //       "name": "Management Key",
-  //       "description": "The sovereign.app management key",
-  //       "nullable": true,
-  //     }
-  //   }
-  // },
+  "nws": {
+    type: "object",
+    name: "NWS Configuration",
+    description: "Configuration for the NWS service",
+    spec: {
+      "enabled": {
+        type: "boolean",
+        name: "Enabled",
+        description: "Whether NWS is enabled",
+        nullable: false,
+        default: true,
+      },
+      "privkey": {
+        type: "string",
+        name: "Nostr Secret Key (Hex)",
+        description: "The Nostr secret key for the NWS service",
+        nullable: false,
+      },
+      "relay": {
+        type: "string",
+        name: "Relay URL",
+        description: "The URL of the NWS relay",
+        nullable: false,
+      },
+    }
+  },
   "mint-name": {
     type: "string",
     name: "Mint Name",

@@ -1,4 +1,4 @@
-FROM rust:1.79-slim-bookworm AS builder
+FROM rust:1.79-slim-bookworm AS rust-builder
 
 RUN apt-get update -qqy && \
     apt-get upgrade -qqy && \
@@ -11,6 +11,11 @@ COPY ./chamberlain .
 RUN rustup toolchain install stable
 RUN cargo +stable install --locked --path .
 
+FROM golang:1.21-bookworm AS go-builder
+WORKDIR /build
+COPY ./nws .
+RUN go build -o nws-entry cmd/entry/*.go
+
 FROM debian:bookworm-slim AS final
 
 RUN apt-get update -qqy && \
@@ -22,15 +27,17 @@ RUN apt-get update -qqy && \
     gettext \
     jq \
     netcat-openbsd \
+    nginx \
     tini && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/* /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
 
 ARG ARCH
 ARG PLATFORM
 RUN curl -sLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${PLATFORM} && chmod +x /usr/local/bin/yq
 
-COPY --from=builder /usr/local/cargo/bin/chamberlain /bin/chamberlain
-COPY --from=builder /usr/local/cargo/bin/chamberlaind /bin/chamberlaind
+COPY --from=rust-builder /usr/local/cargo/bin/chamberlain /bin/chamberlain
+COPY --from=rust-builder /usr/local/cargo/bin/chamberlaind /bin/chamberlaind
+COPY --from=go-builder /build/nws-entry /bin/nws-entry
 
 ADD ./docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
 RUN chmod a+x /usr/local/bin/docker_entrypoint.sh
