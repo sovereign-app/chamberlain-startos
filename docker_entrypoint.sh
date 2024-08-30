@@ -64,7 +64,7 @@ if [ ! -f "/root/data/auth_token" ]; then
     dd if=/dev/zero of=/root/data/auth_token bs=32 count=1
 fi
 
-nws-exit --port 4443 --target http://localhost:3338 &
+nws exit --port 4443 --target http://localhost:3338 &
 # nginx -c /etc/nginx/nginx.conf &
 chamberlaind \
     --data-dir /root/data \
