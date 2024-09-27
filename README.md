@@ -1,12 +1,13 @@
 <p align="center">
-  <img src="https://github.com/sovereign-app/chamberlain-startos/blob/master/.github/images/logo.png?raw=true" alt="Project Logo" width="21%">
+  <img src="https://github.com/sovereign-app/chamberlain-startos/blob/master/.github/images/logo.png?raw=true" alt="sovereign.app Logo">
 </p>
 
 # Chamberlain for StartOS
 
 [Chamberlain](https://github.com/sovereign-app/chamberlain) is a
-[Cashu](https://cashu.space) mint with an integrated Lightning Network node
-built on [LDK](https://github.com/lightningdevkit/rust-lightning).
+[Cashu](https://cashu.space) mint built on
+[CDK](https://github.com/cashubtc/cdk) with an integrated
+[LDK](https://github.com/lightningdevkit/rust-lightning) Lightning Network node.
 
 ## Dependencies
 
