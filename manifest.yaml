@@ -1,12 +1,12 @@
 id: chamberlain
 title: "Chamberlain"
-version: 0.0.1
+version: 0.1.0
 release-notes: |
   Initial release of Chamberlain from sovereign.app.
 license: MIT+CC
 wrapper-repo: "https://github.com/sovereign-app/chamberlain-startos"
 upstream-repo: "https://github.com/sovereign-app/chamberlain"
-marketing-site: "https://sovereign.app/"
+marketing-site: "https://sovereign.app"
 build: ["make"]
 description:
   short: Chamberlain
