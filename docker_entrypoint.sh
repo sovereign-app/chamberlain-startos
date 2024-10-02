@@ -16,7 +16,7 @@ if [ "$NWS_ENABLED" = "true" ]; then
     if [ -z "$NOSTR_PRIVATE_KEY" ] || [ "$NOSTR_PRIVATE_KEY" = "null" ]; then
         echo "Generating new NOSTR private key"
         NOSTR_PRIVATE_KEY=$(openssl rand -hex 32)
-        yq -y ".nws.private-key = \"$NOSTR_PRIVATE_KEY\"" -i "$CONFIG_FILE"
+        yq -i ".nws.private-key = \"$NOSTR_PRIVATE_KEY\"" "$CONFIG_FILE"
     fi
     export NOSTR_PRIVATE_KEY
     export PUBLIC="false"
