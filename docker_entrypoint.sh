@@ -8,6 +8,7 @@ echo "Starting Chamberlain from config file: $CONFIG_FILE"
 BITCOIND_RPC_USER=$(yq '.bitcoind-rpc-user' "$CONFIG_FILE")
 BITCOIND_RPC_PASSWORD=$(yq '.bitcoind-rpc-password' "$CONFIG_FILE")
 NWS_ENABLED=$(yq '.nws.enabled' "$CONFIG_FILE")
+TOR_ADDRESS=$(yq '.tor-address' "$CONFIG_FILE")
 
 echo "NWS enabled: $NWS_ENABLED"
 if [ "$NWS_ENABLED" = "true" ]; then
@@ -24,6 +25,9 @@ if [ "$NWS_ENABLED" = "true" ]; then
 fi
 
 MINT_URL=$(yq '.mint-url' "$CONFIG_FILE")
+if [ -z "$MINT_URL" ] || [ "$MINT_URL" = "null" ]; then
+    MINT_URL="$TOR_ADDRESS"
+fi
 MINT_NAME=$(yq '.mint-name' "$CONFIG_FILE")
 if [ -z "$MINT_NAME" ] || [ "$MINT_NAME" = "null" ]; then
     MINT_NAME="Chamberlain"
@@ -65,7 +69,6 @@ if [ ! -f "/root/data/auth_token" ]; then
 fi
 
 nws exit --port 4443 --target http://localhost:3338 &
-# nginx -c /etc/nginx/nginx.conf &
 chamberlaind \
     --data-dir /root/data \
     --mint-url "$MINT_URL" \

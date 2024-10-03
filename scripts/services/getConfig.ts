@@ -1,6 +1,15 @@
 import { types as T, compat } from "../deps.ts";
 
 export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
+  "tor-address": {
+    "name": "Network Tor Address",
+    "description": "The Tor address for the network interface.",
+    "type": "pointer",
+    "subtype": "package",
+    "package-id": "chamberlain",
+    "target": "tor-address",
+    "interface": "main"
+  },
   "bitcoind-rpc-user": {
     type: "pointer",
     name: "RPC Username",
@@ -25,7 +34,7 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
     type: "string",
     name: "Mint URL",
     description: "The public URL of the mint",
-    nullable: false,
+    nullable: true,
   },
   "nws": {
     type: "object",

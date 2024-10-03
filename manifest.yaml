@@ -34,20 +34,18 @@ health-checks:
     success-message: The Cashu HTTP interface is operational.
     type: docker
     image: main
-    entrypoint: "check_http.sh"
-    args: []
+    entrypoint: "health_check.sh"
+    args: ["http"]
     inject: true
-    system: false
     io-format: json
   rpc:
     name: Management RPC Interface
     success-message: The Management RPC interface is operational.
     type: docker
     image: main
-    entrypoint: "check_rpc.sh"
-    args: []
+    entrypoint: "health_check.sh"
+    args: ["rpc"]
     inject: true
-    system: false
     io-format: json
 config:
   get:
