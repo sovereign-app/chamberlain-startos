@@ -26,7 +26,7 @@ fi
 
 MINT_URL=$(yq '.mint-url' "$CONFIG_FILE")
 if [ -z "$MINT_URL" ] || [ "$MINT_URL" = "null" ]; then
-    MINT_URL="$TOR_ADDRESS"
+    MINT_URL="http://$TOR_ADDRESS"
 fi
 MINT_NAME=$(yq '.mint-name' "$CONFIG_FILE")
 if [ -z "$MINT_NAME" ] || [ "$MINT_NAME" = "null" ]; then

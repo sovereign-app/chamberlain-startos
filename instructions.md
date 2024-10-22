@@ -5,6 +5,8 @@ reachable from the internet, you can configure NWS. If you are unsure how to
 generate the correct NWS URL, use an initial dummy value, then use the `.nostr`
 URL generated in the logs.
 
+By default, the mint will use the TOR url provided by the main interface.
+
 ## NWS Integration
 
 To enable NWS, configure the hex version of your Nostr private key and a relay
