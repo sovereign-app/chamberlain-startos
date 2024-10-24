@@ -9,7 +9,7 @@ upstream-repo: "https://github.com/sovereign-app/chamberlain"
 marketing-site: "https://sovereign.app"
 build: ["make"]
 description:
-  short: Chamberlain
+  short: A cashu mint implementation with an integrated Lightning node.
   long: |
     Chamberlain is a cashu mint implementation with an integrated Lightning node.
 assets:
