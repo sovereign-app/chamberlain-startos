@@ -4,3 +4,6 @@
 [submodule "nws"]
 	path = nws
 	url = https://github.com/asmogo/nws
+[submodule "frp"]
+	path = frp
+	url = https://github.com/fatedier/frp.git

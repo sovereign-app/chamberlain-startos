@@ -11,10 +11,10 @@ COPY ./chamberlain .
 RUN rustup toolchain install stable
 RUN cargo +stable install --locked --path .
 
-FROM golang:1.21-bookworm AS go-builder
+FROM golang:1.23-bookworm AS go-builder
 WORKDIR /build
-COPY ./nws .
-RUN go build -o nws cmd/nws/*.go
+COPY ./frp .
+RUN make frpc
 
 FROM debian:bookworm-slim AS final
 
@@ -22,10 +22,14 @@ RUN apt-get update -qqy && \
     DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
     bash \
     ca-certificates \
+    certbot \
     curl \
     gettext \
     jq \
     netcat-openbsd \
+    nginx \
+    python3-certbot-nginx \
+    tzdata \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /etc/nginx/sites-enabled/* /etc/nginx/sites-available/*
 
 ARG ARCH
@@ -40,9 +44,13 @@ ADD ./docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
 RUN chmod a+x /usr/local/bin/docker_entrypoint.sh
 ADD ./health_check.sh /usr/local/bin/health_check.sh
 RUN chmod a+x /usr/local/bin/health_check.sh
+COPY nginx.conf /etc/nginx/nginx.conf
+RUN mkdir -p /var/www/certbot
 
 WORKDIR /root/data
 
+EXPOSE 80
+EXPOSE 443
 EXPOSE 3338
 EXPOSE 3339
 
