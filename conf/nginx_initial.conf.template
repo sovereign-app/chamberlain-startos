@@ -1,0 +1,15 @@
+events {
+    worker_connections 1024;  # Example setting
+}
+
+http {
+    server {
+        listen 8080;
+        server_name $CLAN_NAME.clan.svrgn.app $CLAN_NAME.clanmgmt.svrgn.app;
+
+        # Serve Certbot's ACME challenge for certificate renewal
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+    }
+}

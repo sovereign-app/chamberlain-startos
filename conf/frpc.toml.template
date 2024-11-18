@@ -1,0 +1,30 @@
+serverAddr = "clan.svrgn.app"
+serverPort = 7000
+
+[[proxies]]
+name = "mint-http"
+type = "http"
+localPort = 8080
+httpUser = "$FRP_USER"
+httpPassword = "$FRP_PASSWORD"
+customDomains = ["$CLAN_NAME.clan.svrgn.app"]
+
+[[proxies]]
+name = "mint-https"
+type = "https"
+localPort = 8443
+customDomains = ["$CLAN_NAME.clan.svrgn.app"]
+
+[[proxies]]
+name = "mgmt-http"
+type = "http"
+localPort = 8080
+httpUser = "$FRP_USER"
+httpPassword = "$FRP_PASSWORD"
+customDomains = ["$CLAN_NAME.clanmgmt.svrgn.app"]
+
+[[proxies]]
+name = "mgmt-https"
+type = "https"
+localPort = 8443
+customDomains = ["$CLAN_NAME.clanmgmt.svrgn.app"]

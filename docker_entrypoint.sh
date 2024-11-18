@@ -3,86 +3,159 @@
 set -e
 
 CONFIG_FILE="/root/data/start9/config.yaml"
+STATS_FILE="/root/data/start9/stats.yaml"
 echo "Starting Chamberlain from config file: $CONFIG_FILE"
 
-BITCOIND_RPC_USER=$(yq '.bitcoind-rpc-user' "$CONFIG_FILE")
-BITCOIND_RPC_PASSWORD=$(yq '.bitcoind-rpc-password' "$CONFIG_FILE")
-NWS_ENABLED=$(yq '.nws.enabled' "$CONFIG_FILE")
 TOR_ADDRESS=$(yq '.tor-address' "$CONFIG_FILE")
+export BITCOIND_RPC_USER=$(yq '.bitcoind-rpc-user' "$CONFIG_FILE")
+export BITCOIND_RPC_PASSWORD=$(yq '.bitcoind-rpc-password' "$CONFIG_FILE")
 
-echo "NWS enabled: $NWS_ENABLED"
-if [ "$NWS_ENABLED" = "true" ]; then
-    export NOSTR_RELAYS="$(yq '.nws.relay' "$CONFIG_FILE")"
-    NOSTR_PRIVATE_KEY="$(yq '.nws.private-key' "$CONFIG_FILE")"
-    if [ -z "$NOSTR_PRIVATE_KEY" ] || [ "$NOSTR_PRIVATE_KEY" = "null" ]; then
-        echo "Generating new NOSTR private key"
-        NOSTR_PRIVATE_KEY=$(openssl rand -hex 32)
-        yq -i ".nws.private-key = \"$NOSTR_PRIVATE_KEY\"" "$CONFIG_FILE"
-    fi
-    export NOSTR_PRIVATE_KEY
-    export PUBLIC="false"
-    export BACKEND_HOST="localhost:3338"
-fi
-
-MINT_URL=$(yq '.mint-url' "$CONFIG_FILE")
+export MINT_URL=$(yq '.mint.url' "$CONFIG_FILE")
 if [ -z "$MINT_URL" ] || [ "$MINT_URL" = "null" ]; then
-    MINT_URL="http://$TOR_ADDRESS"
+    export MINT_URL="http://$TOR_ADDRESS"
 fi
-MINT_NAME=$(yq '.mint-name' "$CONFIG_FILE")
+export MINT_NAME=$(yq '.mint.name' "$CONFIG_FILE")
 if [ -z "$MINT_NAME" ] || [ "$MINT_NAME" = "null" ]; then
-    MINT_NAME="Chamberlain"
+    export MINT_NAME="Chamberlain"
 fi
-MINT_DESCRIPTION=$(yq '.mint-description' "$CONFIG_FILE")
+export MINT_DESCRIPTION=$(yq '.mint.description' "$CONFIG_FILE")
 if [ -z "$MINT_DESCRIPTION" ] || [ "$MINT_DESCRIPTION" = "null" ]; then
-    MINT_DESCRIPTION="A chamberlain powered cashu mint."
+    export MINT_DESCRIPTION="A chamberlain powered cashu mint."
 fi
-MINT_CONTACT_EMAIL=$(yq '.contact-info.email' "$CONFIG_FILE")
+export MINT_MOTD=$(yq '.mint.motd' "$CONFIG_FILE")
+if [ -z "$MINT_MOTD" ] || [ "$MINT_MOTD" = "null" ]; then
+    export MINT_MOTD=""
+fi
+export MINT_CONTACT_EMAIL=$(yq '.mint.contact-info.email' "$CONFIG_FILE")
 if [ -z "$MINT_CONTACT_EMAIL" ] || [ "$MINT_CONTACT_EMAIL" = "null" ]; then
-    MINT_CONTACT_EMAIL=""
+    export MINT_CONTACT_EMAIL=""
 fi
-MINT_CONTACT_TWITTER=$(yq '.contact-info.twitter' "$CONFIG_FILE")
+export MINT_CONTACT_TWITTER=$(yq '.mint.contact-info.twitter' "$CONFIG_FILE")
 if [ -z "$MINT_CONTACT_TWITTER" ] || [ "$MINT_CONTACT_TWITTER" = "null" ]; then
-    MINT_CONTACT_TWITTER=""
+    export MINT_CONTACT_TWITTER=""
 fi
-MINT_CONTACT_NPUB=$(yq '.contact-info.npub' "$CONFIG_FILE")
+export MINT_CONTACT_NPUB=$(yq '.mint.contact-info.npub' "$CONFIG_FILE")
 if [ -z "$MINT_CONTACT_NPUB" ] || [ "$MINT_CONTACT_NUB" = "null" ]; then
-    MINT_CONTACT_NPUB=""
-fi
-PASSWORD=$(tr -dc a-km-zA-HJ-NP-Z2-9 </dev/urandom | head -c 8)
-
-echo "Writing password to /root/data/start9/stats.yaml"
-cat << EOF > /root/data/start9/stats.yaml
----
-version: 2
-data:
-  Password:
-    type: string
-    value: "$PASSWORD"
-    description: Auth token password.
-    copyable: true
-    qr: false
-    masked: true
-EOF
-if [ ! -f "/root/data/auth_token" ]; then
-    echo "Writing default auth token to /root/data/auth_token"
-    dd if=/dev/zero of=/root/data/auth_token bs=32 count=1
+    export MINT_CONTACT_NPUB=""
 fi
 
-nws exit --port 4443 --target http://localhost:3338 &
 chamberlaind \
     --data-dir /root/data \
     --mint-url "$MINT_URL" \
     --mint-name "$MINT_NAME" \
     --mint-description "$MINT_DESCRIPTION" \
+    --mint-motd "$MINT_MOTD" \
     --mint-contact-email "$MINT_CONTACT_EMAIL" \
     --mint-contact-twitter "$MINT_CONTACT_TWITTER" \
     --mint-contact-npub "$MINT_CONTACT_NPUB" \
-    --password "$PASSWORD" \
     --bitcoind-rpc-url "http://bitcoind.embassy:8332" \
     --bitcoind-rpc-user "$BITCOIND_RPC_USER" \
     --bitcoind-rpc-password "$BITCOIND_RPC_PASSWORD" \
     --lightning-auto-announce=false \
+    --rpc-auth-jwks-url "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_XaIPDAMB1/.well-known/jwks.json" \
     --log-level debug &
 
+cat << EOF > "$STATS_FILE"
+---
+version: 2
+data:
+  "Mint URL":
+    type: string
+    value: "$MINT_URL"
+    description: "The URL of the mint."
+    copyable: true
+    qr: false
+    masked: false
+EOF
+
+SOVEREIGN_APP_ENABLED=$(yq '.sovereign-app.enabled' "$CONFIG_FILE")
+echo "sovereign.app integration enabled: $SOVEREIGN_APP_ENABLED"
+if [ "$SOVEREIGN_APP_ENABLED" = "true" ]; then
+    # Set up sovereign.app integration
+    URL="https://api.sovereign.app/clan/link"
+    LINK_DETAILS_PATH="/root/data/clan_link.json"
+
+    if [ -f "$LINK_DETAILS_PATH" ]; then
+        echo "Clan link already established."
+    else
+        echo "Requesting link details..."
+        response=$(curl -s -X POST "$URL")
+        export CODE=$(echo "$response" | jq -r '.code')
+        if [ -n "$CODE" ]; then
+            echo "Link code retrieved: $CODE"
+            yq -i '.["Link Code"] = env(CODE)' "$STATS_FILE"
+        else
+            echo "Failed to retrieve link code."
+            exit 1
+        fi
+        while true; do
+            rm -f "$LINK_DETAILS_PATH"
+            response=$(curl -s -w "%{http_code}" -o "$LINK_DETAILS_PATH" "$URL/$CODE")
+            status_code="${response: -3}"
+            if [ "$status_code" -eq 200 ]; then
+                echo "Link details saved to $LINK_DETAILS_PATH (restarting)"
+                exit 0
+            else
+                echo "Link not setup (status: $status_code)"
+                sleep 5  # Wait for 5 seconds before retrying
+            fi
+        done
+    fi
+
+    export CLAN_NAME=$(jq -r '.clan_name' "$LINK_DETAILS_PATH")
+    export MINT_URL="https://$CLAN_NAME.clan.svrgn.app"
+    yq -i '.mint.url = env(MINT_URL)' "$CONFIG_FILE"
+
+    # Start FRPC
+    export FRP_USER=$(jq -r '.sub' "$LINK_DETAILS_PATH")
+    export FRP_PASSWORD=$(jq -r '.token' "$LINK_DETAILS_PATH")
+    if [ -z "$FRP_USER" ] || [ -z "$FRP_PASSWORD" ]; then
+        echo "Failed to retrieve FRP credentials."
+        exit 1
+    fi
+    echo "Starting frpc..."
+    envsubst '${CLAN_NAME} ${FRP_USER} ${FRP_PASSWORD}' < /etc/frp/frpc.toml.template > /etc/frp/frpc.toml
+    frpc -c /etc/frp/frpc.toml &
+
+    # Obtain or renew SSL certificates
+    if [ ! -d "/root/data/letsencrypt/live/$CLAN_NAME.clan.svrgn.app" ]; then
+        echo "Starting nginx..."
+        envsubst '${CLAN_NAME}' < /etc/nginx/nginx_initial.conf.template > /etc/nginx/nginx.conf
+        nginx -g "daemon off;" &
+        NGINX_PID=$!
+        echo "Obtaining new SSL certificate for $CLAN_NAME.clan.svrgn.app..."
+        certbot certonly --nginx --non-interactive --agree-tos --email "$MINT_CONTACT_EMAIL" -d "$CLAN_NAME.clan.svrgn.app"
+        kill $NGINX_PID
+    else
+        echo "Checking renewal status for $CLAN_NAME.clan.svrgn.app..."
+        # certbot renew --cert-name "$CLAN_NAME.clan.svrgn.app" --dry-run && echo "Certificate is up to date." || {
+        #     echo "Renewing SSL certificate for $CLAN_NAME.clan.svrgn.app..."
+        #     certbot renew --nginx --non-interactive --agree-tos
+        # }
+    fi
+
+    if [ ! -d "/root/data/letsencrypt/live/$CLAN_NAME.clanmgmt.svrgn.app" ]; then
+        echo "Starting nginx..."
+        envsubst '${CLAN_NAME}' < /etc/nginx/nginx_initial.conf.template > /etc/nginx/nginx.conf
+        nginx -g "daemon off;" &
+        NGINX_PID=$!
+        echo "Obtaining new SSL certificate for $CLAN_NAME.clanmgmt.svrgn.app..."
+        certbot certonly --nginx --non-interactive --agree-tos --email "$MINT_CONTACT_EMAIL" -d "$CLAN_NAME.clanmgmt.svrgn.app"
+        kill $NGINX_PID
+    else
+        echo "Checking renewal status for $CLAN_NAME.clanmgmt.svrgn.app..."
+        # certbot renew --cert-name "$CLAN_NAME.clanmgmt.svrgn.app" --dry-run && echo "Certificate is up to date." || {
+        #     echo "Renewing SSL certificate for $CLAN_NAME.clanmgmt.svrgn.app..."
+        #     certbot renew --nginx --non-interactive --agree-tos
+        # }
+    fi
+
+    # Switch to full SSL NGINX configuration
+    echo "Starting nginx with SSL configuration..."
+    envsubst '${CLAN_NAME}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+    nginx -g "daemon off;" &
+fi
+
+echo "Chamberlain started successfully."
 wait -n
 exit $?

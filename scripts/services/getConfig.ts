@@ -30,80 +30,74 @@ export const getConfig: T.ExpectedExports.getConfig = compat.getConfig({
     multi: false,
     selector: "$.rpc.password",
   },
-  "mint-url": {
-    type: "string",
-    name: "Mint URL",
-    description: "The public URL of the mint",
-    nullable: true,
-  },
-  "nws": {
+  "mint": {
     type: "object",
-    name: "NWS Configuration",
-    description: "Configuration for the NWS service",
+    name: "Mint Configuration",
+    description: "Configuration for the mint",
+    spec: {
+      "url": {
+        type: "string",
+        name: "Mint URL",
+        description: "The public URL of the mint (auto defaults to sovereign.app integration or TOR address)",
+        nullable: true,
+      },
+      "name": {
+        type: "string",
+        name: "Name",
+        description: "The name of the mint",
+        nullable: true,
+      },
+      "description": {
+        type: "string",
+        name: "Description",
+        description: "A description of the mint",
+        nullable: true,
+      },
+      "motd": {
+        type: "string",
+        name: "MOTD",
+        description: "A message of the day for the mint",
+        nullable: true,
+      },
+      "contact-info": {
+        type: "object",
+        name: "Contact Information",
+        description: "Contact information for the mint",
+        spec: {
+          "email": {
+            type: "string",
+            name: "Email",
+            description: "Email address for the mint",
+            nullable: true,
+          },
+          "twitter": {
+            type: "string",
+            name: "Twitter",
+            description: "Twitter handle for the mint",
+            nullable: true,
+          },
+          "npub": {
+            type: "string",
+            name: "Npub",
+            description: "Nostr public key for the mint",
+            nullable: true,
+          },
+        }
+      }
+    }
+  },
+  "sovereign-app": {
+    type: "object",
+    name: "sovereign.app Configuration",
+    description: "sovereign.app integration configuration",
     spec: {
       "enabled": {
         type: "boolean",
         name: "Enabled",
-        description: "Whether NWS is enabled",
+        description: "Whether the sovereign.app integration is enabled",
         nullable: false,
         default: true,
       },
-      "private-key": {
-        type: "string",
-        name: "Nostr Secret Key (Hex)",
-        description: "The Nostr secret key for the NWS service",
-        nullable: true,
-      },
-      "relay": {
-        type: "string",
-        name: "Relay URL",
-        description: "The URL of the NWS relay",
-        default: "wss://relay.sovereign.app",
-        nullable: true,
-      },
     }
   },
-  "mint-name": {
-    type: "string",
-    name: "Mint Name",
-    description: "The name of the mint",
-    nullable: true,
-  },
-  "mint-description": {
-    type: "string",
-    name: "Mint Description",
-    description: "A description of the mint",
-    nullable: true,
-  },
-  "mint-motd": {
-    type: "string",
-    name: "Mint MOTD",
-    description: "A message of the day for the mint",
-    nullable: true,
-  },
-  "contact-info": {
-    type: "object",
-    name: "Mint Contact Information",
-    description: "Contact information for the mint",
-    spec: {
-      "email": {
-        type: "string",
-        name: "Email",
-        description: "Email address for the mint",
-        nullable: true,
-      },
-      "twitter": {
-        type: "string",
-        name: "Twitter",
-        description: "Twitter handle for the mint",
-        nullable: true,
-      },
-      "npub": {
-        type: "string",
-        name: "Npub",
-        description: "Nostr public key for the mint",
-        nullable: true,
-      },
-    }
-  }
 });

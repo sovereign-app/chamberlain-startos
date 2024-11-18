@@ -1,0 +1,71 @@
+events {
+    worker_connections 1024;  # Example setting
+}
+
+http {
+    # HTTP-to-HTTPS Redirection Server
+    server {
+        listen 8080;
+        server_name $CLAN_NAME.clan.svrgn.app $CLAN_NAME.clanmgmt.svrgn.app;
+
+        # Redirect all HTTP requests to HTTPS
+        location / {
+            return 301 https://$host$request_uri;
+        }
+
+        # Serve Certbot's ACME challenge for certificate renewal
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+    }
+
+    # HTTPS Server for HTTP Service
+    server {
+        listen 8443 ssl http2;
+        server_name $CLAN_NAME.clan.svrgn.app;
+
+        # SSL certificate paths
+        ssl_certificate /root/data/letsencrypt/live/$CLAN_NAME.clan.svrgn.app/fullchain.pem;
+        ssl_certificate_key /root/data/letsencrypt/live/$CLAN_NAME.clan.svrgn.app/privkey.pem;
+
+        # Proxy HTTP requests to the local HTTP server on port 3338
+        location / {
+            proxy_pass http://localhost:3338;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    # HTTPS Server for gRPC Service
+    server {
+        listen 8443 ssl http2;
+        server_name $CLAN_NAME.clanmgmt.svrgn.app;
+
+        # SSL certificate paths
+        ssl_certificate /root/data/letsencrypt/live/$CLAN_NAME.clanmgmt.svrgn.app/fullchain.pem;
+        ssl_certificate_key /root/data/letsencrypt/live/$CLAN_NAME.clanmgmt.svrgn.app/privkey.pem;
+
+        # Enable gRPC proxying
+        location / {
+            grpc_pass grpc://localhost:3339;
+            error_page 502 = /error502grpc;
+
+            # gRPC-specific headers
+            grpc_set_header Host $host;
+            grpc_set_header X-Real-IP $remote_addr;
+            grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            grpc_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Custom 502 page to handle gRPC errors
+        location = /error502grpc {
+            internal;
+            default_type application/grpc;
+            add_header grpc-status 14;
+            add_header content-length 0;
+            return 204;
+        }
+    }
+}
