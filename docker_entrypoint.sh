@@ -6,6 +6,17 @@ CONFIG_FILE="/root/data/start9/config.yaml"
 STATS_FILE="/root/data/start9/stats.yaml"
 echo "Starting Chamberlain from config file: $CONFIG_FILE"
 
+start_chamberlain() {
+    echo "Starting Chamberlain..."
+    chamberlaind \
+        --data-dir /root/data \
+        --bitcoind-rpc-url "http://bitcoind.embassy:8332" \
+        --lightning-auto-announce=false \
+        --rpc-auth-jwks-url "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_XaIPDAMB1/.well-known/jwks.json" \
+        --log-level debug &
+}
+
+
 TOR_ADDRESS=$(yq '.tor-address' "$CONFIG_FILE")
 export BITCOIND_RPC_USER=$(yq '.bitcoind-rpc-user' "$CONFIG_FILE")
 export BITCOIND_RPC_PASSWORD=$(yq '.bitcoind-rpc-password' "$CONFIG_FILE")
@@ -39,27 +50,11 @@ if [ -z "$MINT_CONTACT_NPUB" ] || [ "$MINT_CONTACT_NUB" = "null" ]; then
     export MINT_CONTACT_NPUB=""
 fi
 
-chamberlaind \
-    --data-dir /root/data \
-    --mint-url "$MINT_URL" \
-    --mint-name "$MINT_NAME" \
-    --mint-description "$MINT_DESCRIPTION" \
-    --mint-motd "$MINT_MOTD" \
-    --mint-contact-email "$MINT_CONTACT_EMAIL" \
-    --mint-contact-twitter "$MINT_CONTACT_TWITTER" \
-    --mint-contact-npub "$MINT_CONTACT_NPUB" \
-    --bitcoind-rpc-url "http://bitcoind.embassy:8332" \
-    --bitcoind-rpc-user "$BITCOIND_RPC_USER" \
-    --bitcoind-rpc-password "$BITCOIND_RPC_PASSWORD" \
-    --lightning-auto-announce=false \
-    --rpc-auth-jwks-url "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_XaIPDAMB1/.well-known/jwks.json" \
-    --log-level debug &
-
 cat << EOF > "$STATS_FILE"
 ---
 version: 2
 data:
-  "Mint URL":
+"Mint URL":
     type: string
     value: "$MINT_URL"
     description: "The URL of the mint."
@@ -88,6 +83,7 @@ if [ "$SOVEREIGN_APP_ENABLED" = "true" ]; then
             echo "Failed to retrieve link code."
             exit 1
         fi
+        start_chamberlain
         while true; do
             rm -f "$LINK_DETAILS_PATH"
             response=$(curl -s -w "%{http_code}" -o "$LINK_DETAILS_PATH" "$URL/$CODE")
@@ -101,7 +97,8 @@ if [ "$SOVEREIGN_APP_ENABLED" = "true" ]; then
             fi
         done
     fi
-
+    
+    export RPC_AUTH_SUB=$(jq -r '.sub' "$LINK_DETAILS_PATH")
     export CLAN_NAME=$(jq -r '.clan_name' "$LINK_DETAILS_PATH")
     export MINT_URL="https://$CLAN_NAME.clan.svrgn.app"
     yq -i '.mint.url = env(MINT_URL)' "$CONFIG_FILE"
@@ -156,6 +153,7 @@ if [ "$SOVEREIGN_APP_ENABLED" = "true" ]; then
     nginx -g "daemon off;" &
 fi
 
+start_chamberlain
 echo "Chamberlain started successfully."
 wait -n
 exit $?
