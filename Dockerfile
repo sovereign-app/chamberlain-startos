@@ -1,12 +1,10 @@
 FROM rust:1.82-slim-bookworm AS rust-builder
-
+WORKDIR /build
 RUN apt-get update -qqy && \
     apt-get upgrade -qqy && \
     DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
     ca-certificates libssl-dev pkg-config protobuf-compiler && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
-
-WORKDIR /build
 RUN rustup toolchain install stable
 COPY ./chamberlain .
 RUN cargo +stable install --locked --path .
