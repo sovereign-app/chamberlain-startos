@@ -1,18 +1,19 @@
 # Instructions
 
 Specify a URL for how the mint should be reachable. If your node is not
-reachable from the internet, you can configure NWS. If you are unsure how to
-generate the correct NWS URL, use an initial dummy value, then use the `.nostr`
-URL generated in the logs.
+reachable from the internet, you can configure the [sovereign.app](https://sovereign.app) integration. 
 
 By default, the mint will use the TOR url provided by the main interface.
 
-## NWS Integration
+## sovereign.app Integration
 
-To enable NWS, configure the hex version of your Nostr private key and a relay
-to broadcast your service (i.e., `wss://relay.sovereign.app`).
+Enabling the [sovereign.app](https://sovereign.app) integration will allow your mint to be accessible over the internet. 
+This is the easiest way to make your mint accessible to others.
 
-## Wallet
+During the configuration setup, enable the integration. A code will be generated that you can use to link your 
+[sovereign.app](https://sovereign.app) account to your mint. Use the wallet app to enter the code and link your mint.
+
+### Wallet
 
 Download [sovereign.app](https://sovereign.app) for an easy to use integrated
 wallet.

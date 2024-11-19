@@ -14,6 +14,7 @@ start_chamberlain() {
         --lightning-auto-announce=false \
         --rpc-auth-jwks-url "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_XaIPDAMB1/.well-known/jwks.json" \
         --log-level debug &
+    echo "Chamberlain started successfully."
 }
 
 
@@ -154,6 +155,5 @@ if [ "$SOVEREIGN_APP_ENABLED" = "true" ]; then
 fi
 
 start_chamberlain
-echo "Chamberlain started successfully."
 wait -n
 exit $?
